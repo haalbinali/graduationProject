@@ -396,7 +396,13 @@ def main():
         
         for question in quick_questions:
             if st.button(question, key=question):
-                st.session_state.current_question = question
+                # Trigger question processing
+                st.session_state.messages.append({"role": "user", "content": question})
+                with st.spinner("Thinking..."):
+                    time.sleep(1)
+                    response = st.session_state.chatbot.generate_response(question)
+                st.session_state.messages.append({"role": "assistant", "content": response})
+                st.rerun()
     
     # Main chat interface
     col1, col2 = st.columns([3, 1])
@@ -406,32 +412,6 @@ def main():
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
-        
-        # Handle quick questions
-        if 'current_question' in st.session_state:
-            user_input = st.session_state.current_question
-            del st.session_state.current_question
-        else:
-            user_input = st.chat_input("Ask me anything about traveling to Japan...")
-        
-        if user_input:
-            # Add user message to chat history
-            st.session_state.messages.append({"role": "user", "content": user_input})
-            with st.chat_message("user"):
-                st.markdown(user_input)
-            
-            # Generate and display assistant response
-            with st.chat_message("assistant"):
-                with st.spinner("Thinking..."):
-                    time.sleep(1)  # Simulate thinking time
-                    response = st.session_state.chatbot.generate_response(user_input)
-                st.markdown(response)
-            
-            # Add assistant response to chat history
-            st.session_state.messages.append({"role": "assistant", "content": response})
-            
-            # Rerun to clear input
-            st.rerun()
     
     with col2:
         st.header("📱 Travel Tips")
@@ -462,6 +442,24 @@ def main():
         st.write("- AI: Ollama (local)")
         st.write("- Language: Python")
         st.write("- Deployment: Cloud demo")
+
+    # Chat input at the bottom (outside of columns to avoid the error)
+    user_input = st.chat_input("Ask me anything about traveling to Japan...")
+    
+    if user_input:
+        # Add user message to chat history
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        
+        # Generate and display assistant response
+        with st.spinner("Thinking..."):
+            time.sleep(1)
+            response = st.session_state.chatbot.generate_response(user_input)
+        
+        # Add assistant response to chat history
+        st.session_state.messages.append({"role": "assistant", "content": response})
+        
+        # Rerun to show new messages
+        st.rerun()
 
 if __name__ == "__main__":
     main()
